@@ -1,1 +1,1 @@
-FROM sejeff/fedora-small
+FROM sejeff/fedora-small:f20
