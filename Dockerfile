@@ -1,0 +1,1 @@
+FROM sejeff/fedora-small
