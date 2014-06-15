@@ -1,6 +1,6 @@
 FROM sejeff/fedora-small:f20
 RUN yum install -y yum-fastestmirror
-RUN yum install -y rubygem-bundler npm git unzip patch python-pip make
+RUN yum install -y rubygem-bundler npm git unzip patch python-pip make python-devel python-lxml
 RUN git clone https://github.com/MiCHiLU/timecard-gae.git
 RUN cd timecard-gae && bundle install
 RUN cd timecard-gae && npm install
