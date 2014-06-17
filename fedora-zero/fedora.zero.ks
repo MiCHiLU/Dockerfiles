@@ -28,34 +28,23 @@ repo --name=fedora --mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo
 reboot
 
 # Package list.
-%packages
-@core
-tar
-rsync
+%packages --excludedocs
 
+bash
+coreutils
+fedora-release
+filesystem
+findutils
+grep
+iproute
+sed
+setup
+yum
+
+# removed below
+passwd
 # https://bugzilla.redhat.com/show_bug.cgi?id=1004976
 firewalld
-
-# Some things from @core we can do without inside the container
--audit
--biosdevname
--dhclient
--e2fsprogs
--grubby
--iprutils
--kbd
--NetworkManager
--openssh-server
--parted
--plymouth   
--policycoreutils
--rsyslog
--selinux-policy-targeted
--sudo
-
-# remove openssl and packages dependent on it
--authconfig
--openssl
 
 %end
 
@@ -114,17 +103,32 @@ rm -f /var/lib/random-seed
 echo "Compressing cracklib."
 gzip -9 /usr/share/cracklib/pw_dict.pwd
 
+echo "Minimizing locale-archive."
+localedef --list-archive | grep -v en_US | xargs localedef --delete-from-archive
+mv /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.tmpl
+/usr/sbin/build-locale-archive
+# this is really kludgy and will be fixed with a better way of building
+# these containers
+mv /usr/share/locale/en /usr/share/locale/en_US /tmp
+rm -rf /usr/share/locale/*
+mv /tmp/en /tmp/en_US /usr/share/locale/
+mv /usr/share/i18n/locales/en_US /tmp
+rm -rf /usr/share/i18n/locales/*
+mv /tmp/en_US /usr/share/i18n/locales/
+echo '%_install_langs C:en:en_US:en_US.UTF-8' >> /etc/rpm/macros.imgcreate
+
 echo "Removing extra packages."
-rm -vf /etc/yum/protected.d/
+rm -vf /etc/yum/protected.d/*
+yum -C -y remove passwd --setopt="clean_requirements_on_remove=1"
 yum -C -y remove firewalld --setopt="clean_requirements_on_remove=1"
+
+echo "Removing boot, since we don't need that."
+rm -rf /boot/*
 
 echo "Cleaning old yum repodata."
 yum clean all
-yum history new
+rm -rf /var/lib/yum/yumdb/*
 truncate -c -s 0 /var/log/yum.log
-
-echo "Removing boot, since we don't need that."
-rm -rf /boot/
 
 echo "Fixing SELinux contexts."
 /usr/sbin/fixfiles -R -a restore
